@@ -96,7 +96,23 @@ def summarize_best_books(filepath):
     f = open(filepath)
     soup = BeautifulSoup(f, "html.parser")
     f.close()
-    pass
+    div = soup.find("div", class_="categoryContainer")
+    best_by_genre = div.find_all("div", class_="category clearFix") 
+    #genres
+    genres = best_by_genre.find_all("h4", class_="category__copy") #do .text
+    #titles
+    titles = best_by_genre.findall("img", class_="category__winnerImage") #do .get("alt")
+    #href
+    hrefs = best_by_genre.find_all("a") #do .get("href") 
+
+    lst = []
+    for i in range(len(titles)): #size of titles should be 20
+        genre = genres[i].text
+        title = titles[i].get("alt")
+        href = hrefs[i].get("href")
+        lst.append((genre, title, href))
+
+    return lst 
 
 def write_csv(data, filename):
     """
