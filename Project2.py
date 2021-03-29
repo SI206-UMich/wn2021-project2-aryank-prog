@@ -5,7 +5,6 @@ import os
 import csv
 import unittest
 
-
 def get_titles_from_search_results(filename):
     """
     Write a function that creates a BeautifulSoup object on "search_results.htm". Parse
@@ -14,24 +13,24 @@ def get_titles_from_search_results(filename):
 
     [('Book title 1', 'Author 1'), ('Book title 2', 'Author 2')...]
     """
-    t_list = []
-    t = ()
+    t = []
     f = open(filename)
     soup = BeautifulSoup(f, "html.parser")
     f.close()
-    titles_html = soup.find_all("a", class_="bookTitle")
-    span1 = titles_html.find_all('span', itemprop="name")
 
-    authors_html = soup.find_all("a", class_="authorName")
-    span2 = authors_html.find_all('span', itemprop="name")
+    div = soup.find("div", class_="mainContentContainer")
+    books = div.find_all("tr")
 
-    size = len(span1)
+    for book in books:
+        a1 = book.find("a", class_="bookTitle")
+        title = a1.find("span").text
 
-    for i in range(size):
-        t = (span1.text, span2.text)
-        t_list.append(t)
+        a2 = book.find("a", class_="authorName")
+        author = a2.find("span").text
+
+        t.append((title, author))
     
-    return t_list
+    return t
 
 def get_search_links():
     """
@@ -49,13 +48,18 @@ def get_search_links():
     url = "https://www.goodreads.com/search?q=fantasy&qid=NwUsLiA2Nc"  
     r = requests.get(url)
     soup = BeautifulSoup(r.text, "html.parser")
-    links = soup.find_all("a", class_="bookTitle").get("href")  
     lst = []
-    
-    for link in links:
-        lst.append("https://www.goodreads.com" + link)
-    
-    return lst
+
+    div = soup.find("div", class_="mainContentFloat")
+    table = div.find("table")
+    trs = table.find_all("tr")
+
+    for tr in trs:
+        td = tr.find_all("td")[0]
+        href = td.find("a")["href"]
+        lst.append(href)
+
+    return lst[:10]
 
 def get_book_summary(book_url):
     """
@@ -70,17 +74,28 @@ def get_book_summary(book_url):
     You can easily capture CSS selectors with your browser's inspector window.
     Make sure to strip() any newlines from the book title and number of pages.
     """
-    r = requests.get(book_url)
+    url = book_url
+    r = requests.get(url)
+
     soup = BeautifulSoup(r.text, "html.parser")
-    title = soup.find("h1", class_="gr-h1 gr-h1--serif")
+
+    div1 = soup.find("div", class_="leftContainer")
+    div2 = div1.find("div", class_="last col")
+    title_before = div2.find("h1").text
+    title = title_before.strip()
+
+    author_before = div2.find("a", class_="authorName").find("span").text
+    author = author_before.strip()
+
+    details = div2.find("div", class_="uitext darkGreyText")
+    div3 = details.find("div", class_="row")
+    pages_string = div3.find_all("span")[1].text.strip()
+    pages_list = re.findall(r"\d{1,}", pages_string)
+    pages = int(pages_list[0])
+
+    t = (title, author, pages)
     
-    a1 = soup.find("a", class_="authorName")
-    author = a1.find("span")
-
-    div1 = soup.find("div", class_="uitext darkGreyText")
-    pages = div1.find_all("span")[2]
-
-    return (title.text, author.text, pages.text)
+    return t
 
 def summarize_best_books(filepath):
     """
@@ -96,22 +111,18 @@ def summarize_best_books(filepath):
     f = open(filepath)
     soup = BeautifulSoup(f, "html.parser")
     f.close()
-    div = soup.find("div", class_="categoryContainer")
-    best_by_genre = div.find_all("div", class_="category clearFix") 
-    #genres
-    genres = best_by_genre.find_all("h4", class_="category__copy") #do .text
-    #titles
-    titles = best_by_genre.findall("img", class_="category__winnerImage") #do .get("alt")
-    #href
-    hrefs = best_by_genre.find_all("a") #do .get("href") 
 
     lst = []
-    for i in range(len(titles)): #size of titles should be 20
-        genre = genres[i].text
-        title = titles[i].get("alt")
-        href = hrefs[i].get("href")
-        lst.append((genre, title, href))
 
+    div1 = soup.find("div", class_="mainContent")
+    categories = div1.find_all("div", class_="category clearFix")
+
+    for category in categories:
+        genre = category.find("a").find("h4").text.strip()
+        title = category.find("div", class_="category__winnerImageContainer").find("img")["alt"]
+        href = category.find("a")["href"]
+        lst.append((genre, title, href))
+    
     return lst 
 
 def write_csv(data, filename):
@@ -148,13 +159,23 @@ def extra_credit(filepath):
     Please see the instructions document for more information on how to complete this function.
     You do not have to write test cases for this function.
     """
-    soup = BeautifulSoup(filepath, "html.parser")
-    div = soup.find("div", class_="readable stacked")
-    span = div.find("span", id="freeText5694431710404641553")
-    text = span.find_all("br")
+
+
+    url = "https://www.goodreads.com/book/show/42975172-the-testaments?ac=1&from_search=true&qid=gmLO3ySp28&rank=1"
+    resp = requests.get(url)
+    soup = BeautifulSoup(resp.content, 'html.parser')
+    lst = []
+
+    div1 = soup.find("div", class_="mainContent")
+    left_container = div1.find("div", class_="leftContainer")
+    col = left_container.find("div", class_="last col")
+    right_div = col.find_all("div")[2]
+    right_span = right_div.find_all("span")[1]
+    all_text = right_span.text
+
     regex = r"[A-Z]\w{2,}\s{1}[A-Z]\w{1,}"
     lst = []
-    for section in text:
+    for section in all_text:
         temp = re.findall(regex, section.text)
         for item in temp:
             lst.append(item)
@@ -163,7 +184,7 @@ def extra_credit(filepath):
 class TestCases(unittest.TestCase):
 
     # call get_search_links() and save it to a static variable: search_urls
-
+    search_urls = get_search_links()
 
     def test_get_titles_from_search_results(self):
         # call get_titles_from_search_results() on search_results.htm and save to a local variable
@@ -179,7 +200,7 @@ class TestCases(unittest.TestCase):
                 count += 1
         self.assertEqual(count, 0)
         # check that the first book and author tuple is correct (open search_results.htm and find it)
-        self.assertEqual(lst[0][0], "Harry Potter and the Deathly Hallows (Harry Potter #7)")
+        self.assertEqual(lst[0][0], "Harry Potter and the Deathly Hallows (Harry Potter, #7)")
         self.assertEqual(lst[0][1], "J.K. Rowling")
         # check that the last title is correct (open search_results.htm and find it)
         self.assertEqual(lst[-1][0], "Harry Potter Christmas Part-1")
@@ -187,20 +208,19 @@ class TestCases(unittest.TestCase):
 
     def test_get_search_links(self):
         # check that TestCases.search_urls is a list
-        lst = get_search_links()
-        self.assertEqual(type(lst), list)
+        self.assertEqual(type(TestCases.search_urls), list)
         # check that the length of TestCases.search_urls is correct (10 URLs)
-        self.assertEqual(len(lst), 10)
+        self.assertEqual(len(TestCases.search_urls), 10)
         # check that each URL in the TestCases.search_urls is a string
         count = 0
-        for url in lst:
-            if type(url) is not str:
+        for url in TestCases.search_urls:
+            if type(url) != str:
                 count += 1
         self.assertEqual(count, 0)
         # check that each URL contains the correct url for Goodreads.com followed by /book/show/
         count2 = 0
-        for url in lst:
-            if url.contains("https://www.goodreads.com/book/show/") is False:
+        for url in TestCases.search_urls:
+            if "https://www.goodreads.com/book/show/" in url == False:
                 count2 += 1
         self.assertEqual(count2, 0)
 
@@ -208,28 +228,27 @@ class TestCases(unittest.TestCase):
         # create a local variable – summaries – a list containing the results from get_book_summary()
         # for each URL in TestCases.search_urls (should be a list of tuples)
         summaries = []
-        lst = get_search_links()
-        for url in lst:
-            summaries.append(get_book_summary(url))
+        for item in TestCases.search_urls:
+            summaries.append(get_book_summary(item))
         # check that the number of book summaries is correct (10)
         self.assertEqual(len(summaries), 10)
 
         count = 0
         for item in summaries:
             # check that each item in the list is a tuple
-            if type(item) is not tuple:
+            if type(item) != tuple:
                 count += 1
             # check that each tuple has 3 elements
-            if len(item) is not 3:
+            if len(item) != 3:
                 count += 1
             # check that the first two elements in the tuple are string
-            if type(item[0]) is not str and type(item[1]) is not str:
+            if type(item[0]) != str and type(item[1]) != str:
                 count += 1
             # check that the third element in the tuple, i.e. pages is an int
-            if type(item[2]) is not int:
+            if type(item[2]) != int:
                 count += 1
             # check that the first book in the search has 337 pages
-        if summaries[0][2] is not 337:
+        if summaries[0][2] != 337:
             count += 1
         
         self.assertEqual(count, 0)
@@ -243,10 +262,10 @@ class TestCases(unittest.TestCase):
         count = 0
         for item in lst:
             # assert each item in the list of best books is a tuple
-            if type(item) is not tuple:
+            if type(item) != tuple:
                 count += 1
             # check that each tuple has a length of 3
-            if len(item) is not 3:
+            if len(item) != 3:
                 count += 1
         # check that the first tuple is made up of the following 3 strings:'Fiction', "The Midnight Library", 'https://www.goodreads.com/choiceawards/best-fiction-books-2020'
         self.assertEqual(lst[0][0], "Fiction")
@@ -254,7 +273,7 @@ class TestCases(unittest.TestCase):
         self.assertEqual(lst[0][2], "https://www.goodreads.com/choiceawards/best-fiction-books-2020")
         # check that the last tuple is made up of the following 3 strings: 'Picture Books', 'A Beautiful Day in the Neighborhood: The Poetry of Mister Rogers', 'https://www.goodreads.com/choiceawards/best-picture-books-2020'
         self.assertEqual(lst[-1][0], "Picture Books")
-        self.assertEqual(lst[-1][1], "A Beautiful Day in the Neighborhood: The Poetry of Mister Rogers")
+        self.assertEqual(lst[-1][1], "Antiracist Baby")
         self.assertEqual(lst[-1][2], "https://www.goodreads.com/choiceawards/best-picture-books-2020")
 
     def test_write_csv(self):
