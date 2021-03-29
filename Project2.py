@@ -156,19 +156,12 @@ def write_csv(data, filename):
     """
     #opening file name problem
     #opening it wrong in test too??
-    pass
-"""
-    dir = os.path.dirname("search_results.htm")
-
-    with open(dir, filename, ‘w’) as f:
-        
-
-        obj = csv.writer(csvfile)
-        obj.writerow(("Book Title", "Author Name"))
+    
+    with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), filename), "w") as f:
+        obj = csv.writer(f, delimiter=",")
+        obj.writerow(["Book Title", "Author Name"])
         for row in data:
             obj.writerow(row)
-        csvfile.close()
-"""
 
 def extra_credit(filepath):
     """
@@ -297,20 +290,23 @@ class TestCases(unittest.TestCase):
 
     def test_write_csv(self):
         # call get_titles_from_search_results on search_results.htm and save the result to a variable
-        lst = get_titles_from_search_results("search.results.htm")
+        lst = get_titles_from_search_results("search_results.htm")
         # call write csv on the variable you saved and 'test.csv'
         write_csv(lst, "test.csv")
         # read in the csv that you wrote (create a variable csv_lines - a list containing all the lines in the csv you just wrote to above)
         f = open("test.csv", "r")
-        csv_lines = f.readlines()
+        csv_reader = csv.reader(f)
+        csv_lines = []
+        for i in csv_reader:
+            csv_lines.append(i)
         # check that there are 21 lines in the csv
         self.assertEqual(len(csv_lines), 21)
         # check that the header row is correct
-        self.assertEqual(csv_lines[0], "Book Title, Author Name")
+        self.assertEqual(csv_lines[0], ["Book Title" , "Author Name"])
         # check that the next row is 'Harry Potter and the Deathly Hallows (Harry Potter, #7)', 'J.K. Rowling'
-        self.assertEqual(csv_lines[1], "Harry Potter and the Deathly Hallows (Harry Potter, #7)', 'J.K. Rowling")
+        self.assertEqual(csv_lines[1], ["Harry Potter and the Deathly Hallows (Harry Potter, #7)", "J.K. Rowling"])
         # check that the last row is 'Harry Potter: The Prequel (Harry Potter, #0.5)', 'Julian Harrison (Introduction)'
-        self.assertEqual(csv_lines[-1], "Harry Potter: The Prequel (Harry Potter, #0.5)', 'Julian Harrison (Introduction)")
+        self.assertEqual(csv_lines[-1], ["Harry Potter: The Prequel (Harry Potter, #0.5)", "Julian Harrison (Introduction)"])
 
 
 if __name__ == '__main__':
