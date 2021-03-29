@@ -58,7 +58,7 @@ def get_search_links():
     for tr in trs:
         td = tr.find_all("td")[0]
         href = td.find("a")["href"]
-        lst.append(href)
+        lst.append("https://www.goodreads.com" + href)
 
     return lst[:10]
 
@@ -77,11 +77,17 @@ def get_book_summary(book_url):
     """
     #can't understand problem
     #get link prolem? getting index out of range problem
-    url = "https://www.goodreads.com" + book_url
-    r = requests.get(url)
+    r = requests.get(book_url)
 
     soup = BeautifulSoup(r.text, "html.parser")
 
+    title = soup.find("h1", id="bookTitle").text.strip()
+    author = soup.find("a", class_="authorName").text.strip()
+    pages_string = soup.find("span", itemprop="numberOfPages").text.strip()
+    pages_list = re.findall(r"\d{1,}", pages_string)
+    pages = int(pages_list[0])
+
+    """
     div1 = soup.find("div", class_="leftContainer")
     div2 = div1.find("div", class_="last col")
     title_before = div2.find("h1").text
@@ -93,8 +99,8 @@ def get_book_summary(book_url):
     details = div2.find("div", class_="uitext darkGreyText")
     div3 = details.find("div", class_="row")
     pages_string = div3.find_all("span")[1].text.strip()
-    pages_list = re.findall(r"\d{1,}", pages_string)
-    pages = int(pages_list[0])
+    """
+
 
     t = (title, author, pages)
     
@@ -150,12 +156,19 @@ def write_csv(data, filename):
     """
     #opening file name problem
     #opening it wrong in test too??
-    csvfile = open(filename, "w", newline='')
-    obj = csv.writer(csvfile)
-    obj.writerow(("Book Title", "Author Name"))
-    for row in data:
-        obj.writerow(row)
-    csvfile.close()
+    pass
+"""
+    dir = os.path.dirname("search_results.htm")
+
+    with open(dir, filename, ‘w’) as f:
+        
+
+        obj = csv.writer(csvfile)
+        obj.writerow(("Book Title", "Author Name"))
+        for row in data:
+            obj.writerow(row)
+        csvfile.close()
+"""
 
 def extra_credit(filepath):
     """
