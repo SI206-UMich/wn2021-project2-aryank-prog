@@ -170,27 +170,32 @@ def extra_credit(filepath):
     Please see the instructions document for more information on how to complete this function.
     You do not have to write test cases for this function.
     """
+    with open(os.path.join(os.path.abspath(os.path.dirname(__file__)), filepath), 'r') as f:    
+        data = f.read()
+    
+    #f = open(filepath)
+    soup = BeautifulSoup(data, "html.parser")
+    #f.close()
+
+    #url = "https://www.goodreads.com/book/show/42975172-the-testaments?ac=1&from_search=true&qid=gmLO3ySp28&rank=1"
+    #resp = requests.get(url)
+    #soup = BeautifulSoup(resp.content, 'html.parser')
+
+    div = soup.find("div", class_="readable stacked")
+    br = div.find("span", id="freeText4791443123668479528").text
 
 
-    url = "https://www.goodreads.com/book/show/42975172-the-testaments?ac=1&from_search=true&qid=gmLO3ySp28&rank=1"
-    resp = requests.get(url)
-    soup = BeautifulSoup(resp.content, 'html.parser')
-    lst = []
 
-    div1 = soup.find("div", class_="mainContent")
-    left_container = div1.find("div", class_="leftContainer")
-    col = left_container.find("div", class_="last col")
-    right_div = col.find_all("div")[2]
-    right_span = right_div.find_all("span")[1]
-    all_text = right_span.text
+    regex = r"\b[A-Z]\w.\w+(?:\s[A-Z]\w+)+"
+    #lst = br.split(".")[1:]
+    #print(lst)
+    ec = []
 
-    regex = r"[A-Z]\w{2,}\s{1}[A-Z]\w{1,}"
-    lst = []
-    for section in all_text:
-        temp = re.findall(regex, section.text)
-        for item in temp:
-            lst.append(item)
-    return lst     
+    temp = re.findall(regex, br)
+    for item in temp:
+        ec.append(item)
+    
+    return ec
 
 class TestCases(unittest.TestCase):
 
@@ -252,7 +257,7 @@ class TestCases(unittest.TestCase):
                 count += 1
             # check that each tuple has 3 elements
             if len(item) != 3:
-                count += 1
+                count += 1 
             # check that the first two elements in the tuple are string
             if type(item[0]) != str and type(item[1]) != str:
                 count += 1
